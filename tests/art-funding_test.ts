@@ -45,6 +45,33 @@ Clarinet.test({
 });
 
 Clarinet.test({
+    name: "Cannot fund a completed project",
+    async fn(chain: Chain, accounts: Map<string, Account>) {
+        const deployer = accounts.get('deployer')!;
+        const wallet1 = accounts.get('wallet_1')!;
+        
+        let block = chain.mineBlock([
+            Tx.contractCall('art-funding', 'create-project', [
+                types.ascii("Public Mural"),
+                types.ascii("A beautiful mural for the community"),
+                types.uint(1000)
+            ], deployer.address),
+            Tx.contractCall('art-funding', 'fund-project', [
+                types.principal(deployer.address),
+                types.uint(1000)
+            ], wallet1.address),
+            Tx.contractCall('art-funding', 'complete-project', [], deployer.address),
+            Tx.contractCall('art-funding', 'fund-project', [
+                types.principal(deployer.address),
+                types.uint(500)
+            ], wallet1.address)
+        ]);
+        
+        block.receipts[3].result.expectErr(403);
+    }
+});
+
+Clarinet.test({
     name: "Can complete a fully funded project",
     async fn(chain: Chain, accounts: Map<string, Account>) {
         const deployer = accounts.get('deployer')!;

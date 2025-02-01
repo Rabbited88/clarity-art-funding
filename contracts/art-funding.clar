@@ -21,6 +21,7 @@
 (define-constant ERR-NOT-FOUND (err u404))
 (define-constant ERR-ALREADY-EXISTS (err u409))
 (define-constant ERR-UNAUTHORIZED (err u401))
+(define-constant ERR-NOT-COMPLETED (err u403))
 
 ;; Create new art project
 (define-public (create-project (name (string-ascii 100)) (description (string-ascii 500)) (funding-goal uint))
@@ -42,7 +43,8 @@
         (project (unwrap! (map-get? projects project-owner) ERR-NOT-FOUND))
         (current-contribution (default-to u0 (map-get? contributions {project-owner: project-owner, funder: tx-sender})))
     )
-    (try! (stx-transfer? amount tx-sender (as-contract tx-sender)))
+    (asserts! (not (get completed project)) ERR-NOT-COMPLETED)
+    (try! (stx-transfer? amount tx-sender project-owner))
     (map-set contributions {project-owner: project-owner, funder: tx-sender} 
         (+ current-contribution amount))
     (map-set projects project-owner 
